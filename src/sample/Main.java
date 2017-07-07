@@ -28,43 +28,11 @@ public class Main extends Application {
         Parent root = FXMLLoader.load(getClass().getResource("sample.fxml"));
         primaryStage.setTitle("Hello World");
         Scene scene = new Scene(root, 400, 300);
-
-
-
-        File root_directory = new File("Root");
-
-        //NullPointer
-        systemTree.setRoot(new TreeItem<>(root_directory));
-
-        createTree(root_directory, null);
-
-
         primaryStage.setScene(scene);
         primaryStage.show();
-
-
-
     }
 
-    public void createTree(File dir, TreeItem<File> parent) {
-        TreeItem<File> root = new TreeItem<>(dir);
-        root.setExpanded(true);
-            File[] files = dir.listFiles();
-            for (File file : files) {
 
-                if (file.isDirectory()) {
-                    createTree(file, root);
-                } else {
-                    root.getChildren().add(new TreeItem<>(file));
-                }
-            }
-
-        if(parent==null){
-            systemTree.setRoot(root);
-        } else {
-            parent.getChildren().add(root);
-        }
-    }
 
 
 
