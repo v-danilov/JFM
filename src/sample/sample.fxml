@@ -23,7 +23,7 @@
           <RowConstraints minHeight="10.0" prefHeight="30.0" vgrow="SOMETIMES" />
         </rowConstraints>
          <children>
-            <TreeView fx:id="systemTree" />
+            <TreeView fx:id="systemTree" onMouseClicked="#getElementPath" />
             <Button mnemonicParsing="false" onAction="#showFiles" text="Button" GridPane.columnIndex="1" />
          </children>
       </GridPane>
