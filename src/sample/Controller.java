@@ -2,6 +2,7 @@ package sample;
 
 import javafx.fxml.FXML;
 import javafx.scene.control.*;
+import javafx.scene.control.cell.PropertyValueFactory;
 
 import java.io.File;
 
@@ -17,6 +18,10 @@ public class Controller {
     private TableView<File> filesTable;
 
     @FXML
+    private ListView<File> listView;
+
+
+    @FXML
     public void showFiles(){
         System.out.println("Hello");
 
@@ -30,12 +35,18 @@ public class Controller {
 
     @FXML
     private void getElementPath(){
+        listView.getItems().clear();
         TreeItem<File> selected_file = systemTree.getSelectionModel().getSelectedItem();
         if(selected_file !=null){
-            for(File f : selected_file.getValue().listFiles()){
+            File currentFile = selected_file.getValue();
+            listView.getItems().addAll(currentFile.listFiles());
+            //filesTable.getItems().addAll(currentFile.listFiles());
+
+            /*for(File f : currentFile.listFiles()){
+
                 filesTable.getItems().add(f);
-            }
-            filesTable.getItems().addAll(selected_file.getValue().listFiles());
+            }*/
+
             System.out.println(selected_file.getValue().getPath());
         }
 
@@ -43,13 +54,11 @@ public class Controller {
 
     public void createTree(File dir, TreeItem<File> parent) {
         TreeItem<File> root = new TreeItem<>(dir);
-        root.setExpanded(true);
+        root.setExpanded(false);
         File[] files = dir.listFiles();
         for (File file : files) {
             if (file.isDirectory()) {
                 createTree(file, root);
-            } else {
-                root.getChildren().add(new TreeItem<>(file));
             }
         }
 
