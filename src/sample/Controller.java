@@ -25,6 +25,11 @@ public class Controller {
     public final Image closedFolder=new Image(ClassLoader.getSystemResourceAsStream("images/closedFolder.png"));
     public final Image openFolder=new Image(ClassLoader.getSystemResourceAsStream("images/openFolder.png"));
     public final Image fileIco=new Image(ClassLoader.getSystemResourceAsStream("images/fileico.png"));
+    
+    //From vlad
+    private String iconFolderClose = "images/closedFolder.png";
+    private String iconFolderOpen = "images/openFolder.png";
+    private String iconFile = "images/fileico.png";
 
 
     @FXML
@@ -127,6 +132,10 @@ public class Controller {
         icon.setFitHeight(20);
         icon.setFitWidth(20);
         treeItem.setGraphic(icon);
+        /*
+        ImageView view = getIcon("closedFolder");
+        treeItem.setGraphic(view);
+        */
         treeItem.setExpanded(false);
     }
 
@@ -136,7 +145,39 @@ public class Controller {
         icon.setFitHeight(20);
         icon.setFitWidth(20);
         treeItem.setGraphic(icon);
+        /*
+        ImageView view = getIcon("openFolder");
+        treeItem.setGraphic(view);
+        */
         treeItem.setExpanded(true);
+    }
+    
+    public ImageView getIcon(String name) 
+    {
+        String path;
+        if(name.equals("closedFolder"))
+        {
+            path = iconFolderClose;
+        }
+        if(name.equals("openFolder"))
+        {
+            path = iconFolderOpen;
+        }
+        if(name.equals("file"))
+        {
+            path = iconFile;
+        }
+        if(path == null)
+        {
+            System.out.println("unkown icon name");
+            return null;
+        }
+        Image image =new Image(ClassLoader.getSystemResourceAsStream(path));
+        ImageView result = new ImageView();
+        result.setImage(image);
+        result.setFitHeight(20);
+        result.setFitWidth(20);
+        return result;
     }
 
 
