@@ -19,7 +19,6 @@ public class Main extends Application {
    @FXML
    private TreeView<File> systemTree;
 
-
     @Override
     public void start(Stage primaryStage) throws Exception{
         Parent root = FXMLLoader.load(getClass().getResource("sample.fxml"));
@@ -27,6 +26,7 @@ public class Main extends Application {
         Scene scene = new Scene(root, 400, 300);
         primaryStage.setScene(scene);
         primaryStage.show();
+
 
     }
 

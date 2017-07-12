@@ -24,9 +24,8 @@
           <RowConstraints minHeight="10.0" prefHeight="30.0" vgrow="SOMETIMES" />
         </rowConstraints>
          <children>
-            <ListView fx:id="listView" prefHeight="200.0" prefWidth="198.0" GridPane.columnIndex="1" />
-            <TreeView fx:id="systemTree" prefWidth="340.0" onMouseClicked="#folderNavigation"/>
-            <Button fx:id="showButton" mnemonicParsing="false" onAction="#showFiles" prefHeight="50.0" prefWidth="115.0" text="Load file tree" GridPane.halignment="CENTER" GridPane.valignment="CENTER" />
+            <ListView fx:id="listView" GridPane.columnIndex="1" />
+            <TreeView fx:id="systemTree" />
          </children>
       </GridPane>
    </children>

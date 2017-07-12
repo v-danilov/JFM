@@ -1,11 +1,17 @@
 package sample;
 
+import javafx.event.ActionEvent;
+import javafx.event.EventHandler;
 import javafx.fxml.FXML;
 import javafx.scene.control.*;
 import javafx.scene.image.Image;
 import javafx.scene.image.ImageView;
+import javafx.scene.input.MouseButton;
+import javafx.scene.input.MouseEvent;
 
 import java.io.File;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 public class Controller {
 
@@ -26,19 +32,57 @@ public class Controller {
     public final Image openFolder=new Image(ClassLoader.getSystemResourceAsStream("images/openFolder.png"));
     public final Image fileIco=new Image(ClassLoader.getSystemResourceAsStream("images/fileico.png"));
 
+    ContextMenu contextMenu = new ContextMenu();
+
+    MenuItem renameItem = new MenuItem("Rename");
+    MenuItem replaceItem = new MenuItem("Replace");
+    MenuItem deleteItem = new MenuItem("Delete");
+
 
     @FXML
-    public void showFiles(){
+    public void initialize(){
         System.out.println("Hello");
 
         File root_directory = new File("Root");
-
         systemTree.setRoot(new TreeItem<>(root_directory));
         createTree(root_directory, null);
-        showButton.setVisible(false);
-        showButton.setDisable(true);
+
+        contextMenu.getItems().addAll(renameItem, replaceItem, deleteItem);
+        listView.setContextMenu(contextMenu);
+
+        systemTree.addEventHandler(MouseEvent.ANY, event -> {
+            if (event.getClickCount() == 2 && event.getButton().equals(MouseButton.PRIMARY)) {
+                if (event.getEventType().equals(MouseEvent.MOUSE_CLICKED)) {
+                    folderNavigation();
+                }
+
+                event.consume();
+            }
+        });
+
+        renameItem.setOnAction(new EventHandler<ActionEvent>() {
+            @Override
+            public void handle(ActionEvent event) {
+                renameFile();
+            }
+        });
+
+        replaceItem.setOnAction(new EventHandler<ActionEvent>() {
+            @Override
+            public void handle(ActionEvent event) {
+               moveFile();
+            }
+        });
+
+        deleteItem.setOnAction(new EventHandler<ActionEvent>() {
+            @Override
+            public void handle(ActionEvent event) {
+                deleteFile();
+            }
+        });
 
     }
+
 
     private void createTree(File dir, TreeItem<File> parent) {
 
@@ -66,11 +110,15 @@ public class Controller {
         TreeItem<File> selectedItem = systemTree.getSelectionModel().getSelectedItem();
 
         if(selectedItem !=null){
+
+            //There is reverse logic because treeView default double click event opens folder (maybe)
             if(selectedItem.isExpanded()){
-                goUp(selectedItem);
+                //goUp(selectedItem);
+                goDown(selectedItem);
             }
             else {
-                goDown(selectedItem);
+                //goDown(selectedItem);
+                goUp(selectedItem);
             }
         }
     }
@@ -139,5 +187,60 @@ public class Controller {
         treeItem.setExpanded(true);
     }
 
+    private void renameFile(){
+        //If derictory?
+        File fileToRename = listView.getSelectionModel().getSelectedItem();
+        String newName = getNewFileName();
+        System.out.println(fileToRename.getAbsolutePath());
+        System.out.println(fileToRename.getPath());
+        System.out.println(newName);
+
+    }
+
+    private String getNewFileName(){
+        TextInputDialog textInputDialog = new TextInputDialog();
+        textInputDialog.setHeaderText("Input new name");
+        String name;
+        do{
+            textInputDialog.showAndWait();
+            name = textInputDialog.getResult();
+        }
+        while (!checkRegExp(name));
+
+        return name;
+    }
+
+    private boolean checkRegExp(String str){
+        Pattern p = Pattern.compile("regexp??");
+        Matcher m = p.matcher(str);
+        boolean res = m.matches() && !str.isEmpty();
+        return res ;
+    }
+
+    private void moveFile(){
+
+    }
+
+    private void deleteFile(){
+        File fileToDel= listView.getSelectionModel().getSelectedItem();
+        String mes = "Delete " + fileToDel.getName() + "?";
+        if(confirmationAlert(mes)){
+            fileToDel.delete();
+        }
+        systemTree.refresh();
+        //refreshFiles();
+
+    }
+
+    private boolean confirmationAlert(String mes){
+        Alert alert = new Alert(Alert.AlertType.CONFIRMATION, mes, ButtonType.YES, ButtonType.CANCEL);
+        alert.showAndWait();
+
+        if (alert.getResult() == ButtonType.YES) {
+            return true;
+        }
+
+        return false;
+    }
 
 }
