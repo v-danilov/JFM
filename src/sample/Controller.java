@@ -191,9 +191,10 @@ public class Controller {
         //If derictory?
         File fileToRename = listView.getSelectionModel().getSelectedItem();
         String newName = getNewFileName();
-        System.out.println(fileToRename.getAbsolutePath());
-        System.out.println(fileToRename.getPath());
-        System.out.println(newName);
+
+        String newPath = fileToRename.getPath();
+        fileToRename.renameTo();
+
 
     }
 
@@ -211,10 +212,9 @@ public class Controller {
     }
 
     private boolean checkRegExp(String str){
-        Pattern p = Pattern.compile("regexp??");
-        Matcher m = p.matcher(str);
-        boolean res = m.matches() && !str.isEmpty();
-        return res ;
+        System.out.println(str);
+        //Regexp
+        return true;
     }
 
     private void moveFile(){
