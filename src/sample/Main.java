@@ -16,9 +16,6 @@ import java.io.File;
 
 public class Main extends Application {
 
-   /* private final Node rootIcon =
-            new ImageView(new Image(getClass().getResourceAsStream("root.png")));*/
-
    @FXML
    private TreeView<File> systemTree;
 
@@ -32,10 +29,6 @@ public class Main extends Application {
         primaryStage.show();
 
     }
-
-
-
-
 
     public static void main(String[] args) {
         launch(args);

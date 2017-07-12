@@ -2,12 +2,10 @@ package sample;
 
 import javafx.fxml.FXML;
 import javafx.scene.control.*;
-import javafx.scene.control.cell.PropertyValueFactory;
 import javafx.scene.image.Image;
 import javafx.scene.image.ImageView;
 
 import java.io.File;
-import java.io.IOException;
 
 public class Controller {
 
@@ -23,8 +21,10 @@ public class Controller {
     @FXML
     private ListView<File> listView;
 
+
     public final Image closedFolder=new Image(ClassLoader.getSystemResourceAsStream("images/closedFolder.png"));
     public final Image openFolder=new Image(ClassLoader.getSystemResourceAsStream("images/openFolder.png"));
+    public final Image fileIco=new Image(ClassLoader.getSystemResourceAsStream("images/fileico.png"));
 
 
     @FXML
@@ -40,42 +40,103 @@ public class Controller {
 
     }
 
-    @FXML
-    private void getElementPath(){
-        listView.getItems().clear();
-        TreeItem<File> selected_file = systemTree.getSelectionModel().getSelectedItem();
+    private void createTree(File dir, TreeItem<File> parent) {
 
+        TreeItem<File> root = new TreeItem<>(dir);
+        setClosed(root);
+        File[] files = dir.listFiles();
+        for (File file : files) {
+            if (file.isDirectory()) {
+                createTree(file, root);
+            }
+        }
 
-        if(selected_file !=null){
-            File currentFile = selected_file.getValue();
-            listView.getItems().addAll(currentFile.listFiles());
-            System.out.println(selected_file.getValue().getPath());
+        if (parent == null) {
+            systemTree.setRoot(root);
+        } else {
+            parent.getChildren().add(root);
         }
 
     }
 
-    public void createTree(File dir, TreeItem<File> parent) {
+    @FXML
+    private void folderNavigation(){
 
-            TreeItem<File> root = new TreeItem<>(dir);
-            ImageView icon = new ImageView();
-            icon.setImage(closedFolder);
-            icon.setFitHeight(20);
-            icon.setFitWidth(20);
-            root.setGraphic(icon);
-            root.setExpanded(false);
-            File[] files = dir.listFiles();
-            for (File file : files) {
-                if (file.isDirectory()) {
-                    createTree(file, root);
-                }
+        listView.getItems().clear();
+        TreeItem<File> selectedItem = systemTree.getSelectionModel().getSelectedItem();
+
+        if(selectedItem !=null){
+            if(selectedItem.isExpanded()){
+                goUp(selectedItem);
             }
-
-            if (parent == null) {
-                systemTree.setRoot(root);
-            } else {
-                parent.getChildren().add(root);
+            else {
+                goDown(selectedItem);
             }
+        }
+    }
 
+    private void goUp(TreeItem<File> item){
+        item.setExpanded(false);
+        setClosed(item);
+
+        if(isRoot(item)){
+            displayFiles(item.getValue());
+            collapseAllNodes(item);
+        }else {
+            displayFiles(item.getParent().getValue());
+        }
+        System.out.println(item.getValue());
+    }
+
+    private void goDown(TreeItem<File> item){
+        setOpen(item);
+        File currentFile = item.getValue();
+        displayFiles(currentFile);
+    }
+
+    private boolean isRoot(TreeItem<File> treeItem){
+        if(treeItem.getParent() == null){
+            return true;
+        }
+        else {
+            return false;
+        }
+    }
+
+    private void displayFiles(File directory){
+        if(directory.listFiles().length != 0) {
+            listView.getItems().addAll(directory.listFiles());
+        }
+        else {
+            listView.setPlaceholder(new Label(directory.getName() + " is empty "));
+        }
+    }
+
+    private void collapseAllNodes(TreeItem<File> item){
+        if(item != null && !item.isLeaf()){
+            setClosed(item);
+            for(TreeItem<File> child:item.getChildren()){
+                collapseAllNodes(child);
+            }
+        }
+    }
+
+    private void setClosed(TreeItem<File> treeItem){
+        ImageView icon = new ImageView();
+        icon.setImage(closedFolder);
+        icon.setFitHeight(20);
+        icon.setFitWidth(20);
+        treeItem.setGraphic(icon);
+        treeItem.setExpanded(false);
+    }
+
+    private void setOpen(TreeItem<File> treeItem){
+        ImageView icon = new ImageView();
+        icon.setImage(openFolder);
+        icon.setFitHeight(20);
+        icon.setFitWidth(20);
+        treeItem.setGraphic(icon);
+        treeItem.setExpanded(true);
     }
 
 
