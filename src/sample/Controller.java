@@ -43,9 +43,7 @@ public class Controller {
     public void initialize(){
         System.out.println("Hello");
 
-        File root_directory = new File("Root");
-        systemTree.setRoot(new TreeItem<>(root_directory));
-        createTree(root_directory, null);
+        showTree();;
 
         contextMenu.getItems().addAll(renameItem, replaceItem, deleteItem);
         listView.setContextMenu(contextMenu);
@@ -81,6 +79,12 @@ public class Controller {
             }
         });
 
+    }
+
+    private void showTree(){
+        File root_directory = new File("Root");
+        systemTree.setRoot(new TreeItem<>(root_directory));
+        createTree(root_directory, null);
     }
 
 
@@ -188,59 +192,98 @@ public class Controller {
     }
 
     private void renameFile(){
-        //If derictory?
+
         File fileToRename = listView.getSelectionModel().getSelectedItem();
-        String newName = getNewFileName();
+        String oldName = fileToRename.getName();
+        String newName = "";
 
-        String newPath = fileToRename.getPath();
-        fileToRename.renameTo();
+        newName = getNewFileName(fileToRename);
 
+        if(!newName.isEmpty()) {
+            String filePath = fileToRename.getPath();
+            String renamedPath = filePath.replace(oldName, newName);
+            File renamedFile = new File(renamedPath);
+            boolean successRenamed = fileToRename.renameTo(renamedFile);
+        }
 
     }
 
-    private String getNewFileName(){
+    //Get new file name from user
+    private String getNewFileName(File file){
+
+        //Create window for input
         TextInputDialog textInputDialog = new TextInputDialog();
         textInputDialog.setHeaderText("Input new name");
+
+        //Fil old name
+        textInputDialog.getEditor().setText(file.getName());
+
+        //While name is not valid
         String name;
-        do{
-            textInputDialog.showAndWait();
-            name = textInputDialog.getResult();
+
+        if(file.isFile()){
+            do{
+                textInputDialog.showAndWait();
+                name = textInputDialog.getResult();
+            }
+            while (!checkFileName(name));
+        }else {
+            do{
+                textInputDialog.showAndWait();
+                name = textInputDialog.getResult();
+            }
+            while (!checkDirName(name));
         }
-        while (!checkRegExp(name));
 
         return name;
     }
 
-    private boolean checkRegExp(String str){
-        System.out.println(str);
-        //Regexp
-        return true;
+    //Check file name for regexp
+    private boolean checkFileName(String str){
+        Pattern p = Pattern.compile("[^?:\"<>*\\/\\|]+\\.[A-Za-z0-9]+");
+        Matcher m = p.matcher(str);
+        boolean res = m.matches();
+        return res ;
     }
 
+    //Check directory name for regexp
+    private boolean checkDirName(String str){
+        Pattern p = Pattern.compile("[^~#%&*{}\\:<>/?\\+\\|\"\\.]+");
+        Matcher m = p.matcher(str);
+        boolean res = m.matches();
+        return res ;
+    }
+
+    //Move file
     private void moveFile(){
 
     }
 
+    //Delete file
     private void deleteFile(){
         File fileToDel= listView.getSelectionModel().getSelectedItem();
         String mes = "Delete " + fileToDel.getName() + "?";
+
+        //Take confirmation
         if(confirmationAlert(mes)){
             fileToDel.delete();
         }
         systemTree.refresh();
-        //refreshFiles();
-
     }
 
+    //Confirmation func
     private boolean confirmationAlert(String mes){
+
+        //Prepare alert
         Alert alert = new Alert(Alert.AlertType.CONFIRMATION, mes, ButtonType.YES, ButtonType.CANCEL);
         alert.showAndWait();
 
+        //Get choice
         if (alert.getResult() == ButtonType.YES) {
             return true;
+        }else {
+            return false;
         }
-
-        return false;
     }
 
 }
