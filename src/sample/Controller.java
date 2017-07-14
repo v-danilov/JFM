@@ -10,6 +10,7 @@ import javafx.scene.input.MouseButton;
 import javafx.scene.input.MouseEvent;
 
 import java.io.File;
+import java.io.FileFilter;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -27,26 +28,32 @@ public class Controller {
     @FXML
     private ListView<File> listView;
 
+    /*@FXML
+    private Label statusField;*/
 
-    public final Image closedFolder=new Image(ClassLoader.getSystemResourceAsStream("images/closedFolder.png"));
-    public final Image openFolder=new Image(ClassLoader.getSystemResourceAsStream("images/openFolder.png"));
-    public final Image fileIco=new Image(ClassLoader.getSystemResourceAsStream("images/fileico.png"));
 
-    ContextMenu contextMenu = new ContextMenu();
+    private final Image closedFolder=new Image(ClassLoader.getSystemResourceAsStream("images/closedFolder.png"));
+    private final Image openFolder=new Image(ClassLoader.getSystemResourceAsStream("images/openFolder.png"));
+    private final Image fileIco=new Image(ClassLoader.getSystemResourceAsStream("images/fileico.png"));
 
-    MenuItem renameItem = new MenuItem("Rename");
-    MenuItem replaceItem = new MenuItem("Replace");
-    MenuItem deleteItem = new MenuItem("Delete");
+    private ContextMenu contextMenu = new ContextMenu();
+
+    private MenuItem renameItem = new MenuItem("Rename");
+    private MenuItem replaceItem = new MenuItem("Replace");
+    private MenuItem deleteItem = new MenuItem("Delete");
 
 
     @FXML
     public void initialize(){
         System.out.println("Hello");
 
-        showTree();;
+        showTree();
+
 
         contextMenu.getItems().addAll(renameItem, replaceItem, deleteItem);
         listView.setContextMenu(contextMenu);
+        listView.setPlaceholder(new Label("<- Choose folder..."));
+
 
         systemTree.addEventHandler(MouseEvent.ANY, event -> {
             if (event.getClickCount() == 2 && event.getButton().equals(MouseButton.PRIMARY)) {
@@ -57,7 +64,6 @@ public class Controller {
                 event.consume();
             }
         });
-
         renameItem.setOnAction(new EventHandler<ActionEvent>() {
             @Override
             public void handle(ActionEvent event) {
@@ -156,8 +162,14 @@ public class Controller {
     }
 
     private void displayFiles(File directory){
-        if(directory.listFiles().length != 0) {
-            listView.getItems().addAll(directory.listFiles());
+        File[] dirFiles = directory.listFiles();
+        if(dirFiles.length != 0) {
+            for(File file : dirFiles ){
+                if(file.isFile()){
+                    listView.getItems().add(file);
+                }
+            }
+
         }
         else {
             listView.setPlaceholder(new Label(directory.getName() + " is empty "));
@@ -197,20 +209,20 @@ public class Controller {
         String oldName = fileToRename.getName();
         String newName = "";
 
-        newName = getNewFileName(fileToRename);
+        newName = getNewName(fileToRename);
 
         if(!newName.isEmpty()) {
             String filePath = fileToRename.getPath();
             String renamedPath = filePath.replace(oldName, newName);
             File renamedFile = new File(renamedPath);
-            boolean successRenamed = fileToRename.renameTo(renamedFile);
         }
 
     }
 
     //Get new file name from user
-    private String getNewFileName(File file){
+    private String getNewName(File file){
 
+        boolean type = file.isFile();
         //Create window for input
         TextInputDialog textInputDialog = new TextInputDialog();
         textInputDialog.setHeaderText("Input new name");
@@ -221,7 +233,7 @@ public class Controller {
         //While name is not valid
         String name;
 
-        if(file.isFile()){
+        if(type){
             do{
                 textInputDialog.showAndWait();
                 name = textInputDialog.getResult();
@@ -242,21 +254,23 @@ public class Controller {
     private boolean checkFileName(String str){
         Pattern p = Pattern.compile("[^?:\"<>*\\/\\|]+\\.[A-Za-z0-9]+");
         Matcher m = p.matcher(str);
-        boolean res = m.matches();
-        return res ;
+        return m.matches();
     }
 
     //Check directory name for regexp
     private boolean checkDirName(String str){
         Pattern p = Pattern.compile("[^~#%&*{}\\:<>/?\\+\\|\"\\.]+");
         Matcher m = p.matcher(str);
-        boolean res = m.matches();
-        return res ;
+        return m.matches() ;
     }
 
     //Move file
     private void moveFile(){
 
+        File fileToMove = listView.getSelectionModel().getSelectedItem();
+        String oldpath = fileToMove.getPath();
+        String newPath= "";
+        newPath = getNewName(fileToMove);
     }
 
     //Delete file
@@ -285,5 +299,15 @@ public class Controller {
             return false;
         }
     }
+
+   /* private void statusShow(boolean status){
+        if(status){
+            statusField.setTextFill(Color.web("00ff00"));
+            statusField.setText("Success");
+        }else{
+            statusField.setTextFill(Color.web("#ff0000"));
+            statusField.setText("Failed");
+        }
+    }*/
 
 }
