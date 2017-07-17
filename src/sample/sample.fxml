@@ -1,15 +1,11 @@
 <?xml version="1.0" encoding="UTF-8"?>
 
-
 <?import javafx.scene.control.ListView?>
 <?import javafx.scene.control.TreeView?>
 <?import javafx.scene.layout.ColumnConstraints?>
 <?import javafx.scene.layout.GridPane?>
 <?import javafx.scene.layout.RowConstraints?>
 
-<?import javafx.scene.control.TextField?>
-<?import javafx.scene.control.TextArea?>
-<?import javafx.scene.control.Label?>
 <GridPane alignment="center" xmlns="http://javafx.com/javafx/8.0.111" xmlns:fx="http://javafx.com/fxml/1" fx:controller="sample.Controller">
    <columnConstraints>
       <ColumnConstraints maxWidth="Infinity" minWidth="-Infinity" percentWidth="40" />
@@ -21,7 +17,7 @@
    </rowConstraints>
    <children>
       <ListView fx:id="listView" GridPane.columnIndex="1" />
-      <TreeView fx:id="systemTree" GridPane.columnIndex="0" />
+      <TreeView fx:id="systemTree" onMouseClicked="#currentDirContent" GridPane.columnIndex="0" />
       <!--Label fx:id="statusField" GridPane.halignment="RIGHT" textAlignment="RIGHT" GridPane.columnIndex="1" GridPane.rowIndex="1" maxWidth="Infinity" prefWidth="Infinity" /-->
    </children>
 </GridPane>

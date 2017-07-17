@@ -8,9 +8,10 @@ import javafx.scene.image.Image;
 import javafx.scene.image.ImageView;
 import javafx.scene.input.MouseButton;
 import javafx.scene.input.MouseEvent;
+import javafx.stage.WindowEvent;
+import javafx.util.Callback;
 
 import java.io.File;
-import java.io.FileFilter;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -32,11 +33,15 @@ public class Controller {
     private Label statusField;*/
 
 
-    private final Image closedFolder=new Image(ClassLoader.getSystemResourceAsStream("images/closedFolder.png"));
-    private final Image openFolder=new Image(ClassLoader.getSystemResourceAsStream("images/openFolder.png"));
+    private final Image closedFolderIco =new Image(ClassLoader.getSystemResourceAsStream("images/closedFolder.png"));
+    private final Image openFolderIco =new Image(ClassLoader.getSystemResourceAsStream("images/openFolder.png"));
     private final Image fileIco=new Image(ClassLoader.getSystemResourceAsStream("images/fileico.png"));
 
     private ContextMenu contextMenu = new ContextMenu();
+
+    private Menu createFileMenu = new Menu("Create new...");
+    private MenuItem createFileItem = new MenuItem("File");
+    private MenuItem createDirItem = new MenuItem("Directory");
 
     private MenuItem renameItem = new MenuItem("Rename");
     private MenuItem replaceItem = new MenuItem("Replace");
@@ -49,10 +54,60 @@ public class Controller {
 
         showTree();
 
-
-        contextMenu.getItems().addAll(renameItem, replaceItem, deleteItem);
+        createFileMenu.getItems().addAll(createFileItem,createDirItem);
+        contextMenu.getItems().addAll(createFileMenu, renameItem, replaceItem, deleteItem);
         listView.setContextMenu(contextMenu);
         listView.setPlaceholder(new Label("<- Choose folder..."));
+
+
+
+        /*systemTree.setCellFactory(new Callback<TreeView<File>, TreeCell<File>>() {
+
+            public TreeCell<File> call(TreeView<File> tv) {
+                return new TreeCell<File>() {
+
+                    @Override
+                    protected void updateItem(File item, boolean empty) {
+                        super.updateItem(item, empty);
+                        if(!empty){
+                            setText(item.getName());
+                        }
+
+                        ImageView imageView = new ImageView();
+                        imageView.setFitHeight(20);
+                        imageView.setFitWidth(20);
+
+                        setGraphic(imageView);
+                    }
+
+                };
+            }
+        });*/
+
+        listView.setCellFactory(listView -> new ListCell<File>() {
+            private ImageView imageView = new ImageView();
+
+            @Override
+            public void updateItem(File item, boolean empty) {
+                super.updateItem(item, empty);
+                if (empty) {
+                    setGraphic(null);
+                } else {
+                    imageView.setFitWidth(20);
+                    imageView.setFitHeight(20);
+
+                    if(item.isFile()){
+                        imageView.setImage(fileIco);
+                    }
+                    else {
+                        imageView.setImage(closedFolderIco);
+                    }
+
+                    setGraphic(imageView);
+                    setText(item.getName());
+                }
+            }
+        });
 
 
         systemTree.addEventHandler(MouseEvent.ANY, event -> {
@@ -60,8 +115,35 @@ public class Controller {
                 if (event.getEventType().equals(MouseEvent.MOUSE_CLICKED)) {
                     folderNavigation();
                 }
-
                 event.consume();
+            }
+        });
+
+        contextMenu.setOnShowing(new EventHandler<WindowEvent>() {
+            @Override
+            public void handle(WindowEvent event) {
+                if(listView.getSelectionModel().getSelectedItem() == null){
+                    renameItem.setVisible(false);
+                    replaceItem.setVisible(false);
+                    deleteItem.setVisible(false);
+                }else {
+                    renameItem.setVisible(true);
+                    replaceItem.setVisible(true);
+                    deleteItem.setVisible(true);
+                }
+            }
+        });
+
+        createFileItem.setOnAction(new EventHandler<ActionEvent>() {
+            @Override
+            public void handle(ActionEvent event) {
+                createNewFile();
+            }
+        });
+        createDirItem.setOnAction(new EventHandler<ActionEvent>() {
+            @Override
+            public void handle(ActionEvent event) {
+                createNewDir();
             }
         });
         renameItem.setOnAction(new EventHandler<ActionEvent>() {
@@ -97,7 +179,7 @@ public class Controller {
     private void createTree(File dir, TreeItem<File> parent) {
 
         TreeItem<File> root = new TreeItem<>(dir);
-        setClosed(root);
+        setDirImage(root, true);
         File[] files = dir.listFiles();
         for (File file : files) {
             if (file.isDirectory()) {
@@ -115,8 +197,6 @@ public class Controller {
 
     @FXML
     private void folderNavigation(){
-
-        listView.getItems().clear();
         TreeItem<File> selectedItem = systemTree.getSelectionModel().getSelectedItem();
 
         if(selectedItem !=null){
@@ -134,8 +214,7 @@ public class Controller {
     }
 
     private void goUp(TreeItem<File> item){
-        item.setExpanded(false);
-        setClosed(item);
+        setDirImage(item, true);
 
         if(isRoot(item)){
             displayFiles(item.getValue());
@@ -147,7 +226,7 @@ public class Controller {
     }
 
     private void goDown(TreeItem<File> item){
-        setOpen(item);
+        setDirImage(item, false);
         File currentFile = item.getValue();
         displayFiles(currentFile);
     }
@@ -162,60 +241,67 @@ public class Controller {
     }
 
     private void displayFiles(File directory){
+        listView.getItems().clear();
         File[] dirFiles = directory.listFiles();
         if(dirFiles.length != 0) {
             for(File file : dirFiles ){
-                if(file.isFile()){
                     listView.getItems().add(file);
-                }
             }
-
         }
         else {
             listView.setPlaceholder(new Label(directory.getName() + " is empty "));
         }
     }
 
+    @FXML
+    private void currentDirContent(){
+        /*listView.getItems().clear();
+        File selectedNode = systemTree.getSelectionModel().getSelectedItem().getValue();
+        System.out.println(selectedNode);
+        if(selectedNode != null){
+            displayFiles(selectedNode);
+        }*/
+    }
+
     private void collapseAllNodes(TreeItem<File> item){
         if(item != null && !item.isLeaf()){
-            setClosed(item);
+            setDirImage(item, true);
             for(TreeItem<File> child:item.getChildren()){
                 collapseAllNodes(child);
             }
         }
     }
 
-    private void setClosed(TreeItem<File> treeItem){
-        ImageView icon = new ImageView();
-        icon.setImage(closedFolder);
-        icon.setFitHeight(20);
-        icon.setFitWidth(20);
-        treeItem.setGraphic(icon);
-        treeItem.setExpanded(false);
-    }
+    private void setDirImage(TreeItem<File> treeItem, boolean closed){
 
-    private void setOpen(TreeItem<File> treeItem){
         ImageView icon = new ImageView();
-        icon.setImage(openFolder);
         icon.setFitHeight(20);
         icon.setFitWidth(20);
+
+        if(closed){
+            icon.setImage(closedFolderIco);
+        }
+        else {
+            icon.setImage(openFolderIco);
+        }
         treeItem.setGraphic(icon);
-        treeItem.setExpanded(true);
+
     }
 
     private void renameFile(){
 
         File fileToRename = listView.getSelectionModel().getSelectedItem();
-        String oldName = fileToRename.getName();
-        String newName = "";
 
-        newName = getNewName(fileToRename);
+            String oldName = fileToRename.getName();
+            String newName = "";
 
-        if(!newName.isEmpty()) {
-            String filePath = fileToRename.getPath();
-            String renamedPath = filePath.replace(oldName, newName);
-            File renamedFile = new File(renamedPath);
-        }
+            newName = getNewName(fileToRename);
+
+            if (!newName.isEmpty()) {
+                String filePath = fileToRename.getPath();
+                String renamedPath = filePath.replace(oldName, newName);
+                File renamedFile = new File(renamedPath);
+            }
 
     }
 
@@ -266,23 +352,26 @@ public class Controller {
 
     //Move file
     private void moveFile(){
-
         File fileToMove = listView.getSelectionModel().getSelectedItem();
-        String oldpath = fileToMove.getPath();
-        String newPath= "";
-        newPath = getNewName(fileToMove);
+
+            String oldpath = fileToMove.getPath();
+            String newPath = "";
+            newPath = getNewName(fileToMove);
+
     }
 
     //Delete file
     private void deleteFile(){
         File fileToDel= listView.getSelectionModel().getSelectedItem();
-        String mes = "Delete " + fileToDel.getName() + "?";
 
-        //Take confirmation
-        if(confirmationAlert(mes)){
-            fileToDel.delete();
-        }
-        systemTree.refresh();
+            String mes = "Delete " + fileToDel.getName() + "?";
+
+            //Take confirmation
+            if (confirmationAlert(mes)) {
+                fileToDel.delete();
+            }
+            systemTree.refresh();
+
     }
 
     //Confirmation func
@@ -298,6 +387,15 @@ public class Controller {
         }else {
             return false;
         }
+    }
+
+    private void createNewFile(){
+        System.out.println(listView.getItems());
+        System.out.println(listView.getItems().get(0).getParent());
+    }
+
+    private void createNewDir(){
+
     }
 
    /* private void statusShow(boolean status){
