@@ -29,6 +29,9 @@ public class Controller {
     @FXML
     private ListView<File> listView;
 
+    @FXML
+    private Label currentFolderNameLable;
+
     /*@FXML
     private Label statusField;*/
 
@@ -58,7 +61,6 @@ public class Controller {
         contextMenu.getItems().addAll(createFileMenu, renameItem, replaceItem, deleteItem);
         listView.setContextMenu(contextMenu);
         listView.setPlaceholder(new Label("<- Choose folder..."));
-
 
 
         /*systemTree.setCellFactory(new Callback<TreeView<File>, TreeCell<File>>() {
@@ -201,7 +203,7 @@ public class Controller {
 
         if(selectedItem !=null){
 
-            //There is reverse logic because treeView default double click event opens folder (maybe)
+            //There is reverse logic because treeView default double click expands folder first
             if(selectedItem.isExpanded()){
                 //goUp(selectedItem);
                 goDown(selectedItem);
@@ -222,7 +224,6 @@ public class Controller {
         }else {
             displayFiles(item.getParent().getValue());
         }
-        System.out.println(item.getValue());
     }
 
     private void goDown(TreeItem<File> item){
@@ -243,6 +244,7 @@ public class Controller {
     private void displayFiles(File directory){
         listView.getItems().clear();
         File[] dirFiles = directory.listFiles();
+        currentFolderNameLable.setText(directory.getName());
         if(dirFiles.length != 0) {
             for(File file : dirFiles ){
                     listView.getItems().add(file);
@@ -309,6 +311,7 @@ public class Controller {
     private String getNewName(File file){
 
         boolean type = file.isFile();
+
         //Create window for input
         TextInputDialog textInputDialog = new TextInputDialog();
         textInputDialog.setHeaderText("Input new name");
@@ -336,6 +339,42 @@ public class Controller {
         return name;
     }
 
+    private String getNewPath(File file){
+
+        boolean type = file.isFile();
+        String pathOnly = file.getParent();
+
+        //Create window for input
+        TextInputDialog textInputDialog = new TextInputDialog();
+        textInputDialog.setHeaderText("New path for " + file.getName());
+
+        //Fil old name
+        textInputDialog.getEditor().setText(pathOnly);
+
+
+        //While name is not valid
+        String name;
+        boolean wrongPath = true;
+
+        do {
+            textInputDialog.showAndWait();
+            name = textInputDialog.getResult();
+            String[] dirs = name.split("/");
+            for(String dir : dirs){
+                if(checkDirName(dir)){
+                    wrongPath = false;
+                }else {
+                    wrongPath = true;
+                    break;
+                }
+            }
+        }
+        while (wrongPath);
+
+        return name;
+
+    }
+
     //Check file name for regexp
     private boolean checkFileName(String str){
         Pattern p = Pattern.compile("[^?:\"<>*\\/\\|]+\\.[A-Za-z0-9]+");
@@ -353,11 +392,9 @@ public class Controller {
     //Move file
     private void moveFile(){
         File fileToMove = listView.getSelectionModel().getSelectedItem();
-
-            String oldpath = fileToMove.getPath();
-            String newPath = "";
-            newPath = getNewName(fileToMove);
-
+            String newPath;
+            newPath = getNewPath(fileToMove);
+            fileToMove.renameTo(new File(newPath + fileToMove.getName()));
     }
 
     //Delete file
@@ -391,7 +428,6 @@ public class Controller {
 
     private void createNewFile(){
         System.out.println(listView.getItems());
-        System.out.println(listView.getItems().get(0).getParent());
     }
 
     private void createNewDir(){

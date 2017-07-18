@@ -1,10 +1,12 @@
 <?xml version="1.0" encoding="UTF-8"?>
 
+<?import javafx.scene.control.Label?>
 <?import javafx.scene.control.ListView?>
 <?import javafx.scene.control.TreeView?>
 <?import javafx.scene.layout.ColumnConstraints?>
 <?import javafx.scene.layout.GridPane?>
 <?import javafx.scene.layout.RowConstraints?>
+<?import javafx.scene.text.Font?>
 
 <GridPane alignment="center" xmlns="http://javafx.com/javafx/8.0.111" xmlns:fx="http://javafx.com/fxml/1" fx:controller="sample.Controller">
    <columnConstraints>
@@ -16,8 +18,24 @@
        <!--RowConstraints percentHeight="5" /-->
    </rowConstraints>
    <children>
-      <ListView fx:id="listView" GridPane.columnIndex="1" />
+      <GridPane maxWidth="Infinity" minWidth="-Infinity" GridPane.columnIndex="1">
+        <rowConstraints>
+          <RowConstraints percentHeight="5" valignment="CENTER" />
+          <RowConstraints percentHeight="95" />
+        </rowConstraints>
+         <children>
+            <Label fx:id="currentFolderNameLable" alignment="BASELINE_CENTER" contentDisplay="CENTER" text="Lable" textAlignment="CENTER" GridPane.halignment="CENTER">
+               <font>
+                  <Font name="System Bold" size="14.0" />
+               </font>
+            </Label>
+            <ListView fx:id="listView" GridPane.rowIndex="1" />
+         </children>
+         <columnConstraints>
+            <ColumnConstraints percentWidth="100" />
+         </columnConstraints>
+      </GridPane>
       <TreeView fx:id="systemTree" onMouseClicked="#currentDirContent" GridPane.columnIndex="0" />
-      <!--Label fx:id="statusField" GridPane.halignment="RIGHT" textAlignment="RIGHT" GridPane.columnIndex="1" GridPane.rowIndex="1" maxWidth="Infinity" prefWidth="Infinity" /-->
+      <!--Label fx:id="statusField" GridPane.halignment="RIGHT" textAlignment="RIGHT" GridPane.columnIndex="1" GridPane.rowIndex="0" maxWidth="Infinity" prefWidth="Infinity" /-->
    </children>
 </GridPane>
