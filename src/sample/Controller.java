@@ -12,6 +12,7 @@ import javafx.stage.WindowEvent;
 import javafx.util.Callback;
 
 import java.io.File;
+import java.io.IOException;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -49,6 +50,8 @@ public class Controller {
     private MenuItem renameItem = new MenuItem("Rename");
     private MenuItem replaceItem = new MenuItem("Replace");
     private MenuItem deleteItem = new MenuItem("Delete");
+
+    private String currentPath;
 
 
     @FXML
@@ -94,6 +97,7 @@ public class Controller {
                 super.updateItem(item, empty);
                 if (empty) {
                     setGraphic(null);
+                    setText("");
                 } else {
                     imageView.setFitWidth(20);
                     imageView.setFitHeight(20);
@@ -204,13 +208,15 @@ public class Controller {
         if(selectedItem !=null){
 
             //There is reverse logic because treeView default double click expands folder first
-            if(selectedItem.isExpanded()){
+            if(selectedItem.isExpanded() || selectedItem.isLeaf()){
                 //goUp(selectedItem);
                 goDown(selectedItem);
             }
             else {
+
                 //goDown(selectedItem);
                 goUp(selectedItem);
+
             }
         }
     }
@@ -220,10 +226,10 @@ public class Controller {
 
         if(isRoot(item)){
             displayFiles(item.getValue());
-            collapseAllNodes(item);
         }else {
             displayFiles(item.getParent().getValue());
         }
+        collapseAllNodes(item);
     }
 
     private void goDown(TreeItem<File> item){
@@ -242,13 +248,16 @@ public class Controller {
     }
 
     private void displayFiles(File directory){
+        currentPath = directory.getPath();
         listView.getItems().clear();
         File[] dirFiles = directory.listFiles();
         currentFolderNameLable.setText(directory.getName());
         if(dirFiles.length != 0) {
+
             for(File file : dirFiles ){
                     listView.getItems().add(file);
             }
+
         }
         else {
             listView.setPlaceholder(new Label(directory.getName() + " is empty "));
@@ -266,7 +275,7 @@ public class Controller {
     }
 
     private void collapseAllNodes(TreeItem<File> item){
-        if(item != null && !item.isLeaf()){
+        if(item != null){
             setDirImage(item, true);
             for(TreeItem<File> child:item.getChildren()){
                 collapseAllNodes(child);
@@ -303,7 +312,10 @@ public class Controller {
                 String filePath = fileToRename.getPath();
                 String renamedPath = filePath.replace(oldName, newName);
                 File renamedFile = new File(renamedPath);
+                fileToRename.renameTo(renamedFile);
             }
+
+            refreshTree();
 
     }
 
@@ -335,6 +347,26 @@ public class Controller {
             }
             while (!checkDirName(name));
         }
+
+        return name;
+    }
+
+    private String getNewName(){
+
+        //Create window for input
+        TextInputDialog textInputDialog = new TextInputDialog();
+        textInputDialog.setHeaderText("Input new name");
+
+
+        //While name is not valid
+        String name;
+
+            do{
+                textInputDialog.showAndWait();
+                name = textInputDialog.getResult();
+            }
+            while (!checkFileName(name));
+
 
         return name;
     }
@@ -427,11 +459,25 @@ public class Controller {
     }
 
     private void createNewFile(){
-        System.out.println(listView.getItems());
+        System.out.println(currentPath);
+        String newFileName = getNewName();
+        File newFile = new File(currentPath + "/" + newFileName);
+        try {
+            newFile.createNewFile();
+        }
+        catch (IOException ioe){
+            System.err.println(ioe.getStackTrace());
+        }
+        refreshTree();
     }
 
     private void createNewDir(){
 
+    }
+
+    private void refreshTree(){
+        systemTree.setRoot(null);
+        showTree();
     }
 
    /* private void statusShow(boolean status){
