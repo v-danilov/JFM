@@ -1,5 +1,6 @@
 package sample;
 
+import javafx.application.Platform;
 import javafx.event.ActionEvent;
 import javafx.event.EventHandler;
 import javafx.fxml.FXML;
@@ -187,11 +188,11 @@ public class Controller {
         TreeItem<File> root = new TreeItem<>(dir);
         setDirImage(root, true);
         File[] files = dir.listFiles();
-        for (File file : files) {
+        /*for (File file : files) {
             if (file.isDirectory()) {
                 createTree(file, root);
             }
-        }
+        }*/
 
         if (parent == null) {
             systemTree.setRoot(root);
@@ -210,10 +211,31 @@ public class Controller {
             //There is reverse logic because treeView default double click expands folder first
             if(selectedItem.isExpanded() || selectedItem.isLeaf()){
                 //goUp(selectedItem);
-                goDown(selectedItem);
+
+                Thread update = new Thread() {
+                    public void run() {
+                        //Do some stuff in another thread
+                        try {
+                            Thread.sleep(2000);
+                            System.out.println("done");
+                        }
+                        catch (Exception e){
+
+                        }
+                        Platform.runLater(new Runnable() {
+                            public void run() {
+                                //update fx
+                            }
+                        });
+                    }
+                };
+                update.start();
+
+                        goDown(selectedItem);
+
+
             }
             else {
-
                 //goDown(selectedItem);
                 goUp(selectedItem);
 
@@ -223,7 +245,7 @@ public class Controller {
 
     private void goUp(TreeItem<File> item){
         setDirImage(item, true);
-
+        item.getChildren().clear();
         if(isRoot(item)){
             displayFiles(item.getValue());
         }else {
@@ -234,7 +256,14 @@ public class Controller {
 
     private void goDown(TreeItem<File> item){
         setDirImage(item, false);
+        item.setExpanded(true);
         File currentFile = item.getValue();
+        File[] leafs = currentFile.listFiles();
+        for(File leaf : leafs){
+            if(leaf.isDirectory()) {
+                createTree(leaf, item);
+            }
+        }
         displayFiles(currentFile);
     }
 
