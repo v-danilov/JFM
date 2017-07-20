@@ -208,35 +208,49 @@ public class Controller {
 
         if(selectedItem !=null){
 
-            //There is reverse logic because treeView default double click expands folder first
+            //There is reverse logic for goUp and goDown
+            //because treeView default double click expands folder first
             if(selectedItem.isExpanded() || selectedItem.isLeaf()){
+
                 //goUp(selectedItem);
 
+                //Lazy loading block
+
+                //Loading circle
+                ProgressIndicator pInd = new ProgressIndicator();
+                pInd.setPrefSize(20,20);
+                pInd.setStyle(" -fx-progress-color: red;");
+                selectedItem.setGraphic(pInd);
+
+                //New thread
                 Thread update = new Thread() {
                     public void run() {
-                        //Do some stuff in another thread
                         try {
+                            //Delay 2sec
                             Thread.sleep(2000);
-                            System.out.println("done");
                         }
-                        catch (Exception e){
-
+                        catch (InterruptedException ie){
+                            System.err.println(ie.getMessage());
                         }
+                        //Update UI
                         Platform.runLater(new Runnable() {
                             public void run() {
-                                //update fx
+                                goDown(selectedItem);
                             }
                         });
                     }
                 };
                 update.start();
 
-                        goDown(selectedItem);
+                // Usual (in time) loading
+                // goDown(selectedItem);
 
 
             }
             else {
+
                 //goDown(selectedItem);
+
                 goUp(selectedItem);
 
             }
@@ -291,16 +305,6 @@ public class Controller {
         else {
             listView.setPlaceholder(new Label(directory.getName() + " is empty "));
         }
-    }
-
-    @FXML
-    private void currentDirContent(){
-        /*listView.getItems().clear();
-        File selectedNode = systemTree.getSelectionModel().getSelectedItem().getValue();
-        System.out.println(selectedNode);
-        if(selectedNode != null){
-            displayFiles(selectedNode);
-        }*/
     }
 
     private void collapseAllNodes(TreeItem<File> item){
