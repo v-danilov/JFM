@@ -66,30 +66,6 @@ public class Controller {
         listView.setContextMenu(contextMenu);
         listView.setPlaceholder(new Label("<- Choose folder..."));
 
-
-        /*systemTree.setCellFactory(new Callback<TreeView<File>, TreeCell<File>>() {
-
-            public TreeCell<File> call(TreeView<File> tv) {
-                return new TreeCell<File>() {
-
-                    @Override
-                    protected void updateItem(File item, boolean empty) {
-                        super.updateItem(item, empty);
-                        if(!empty){
-                            setText(item.getName());
-                        }
-
-                        ImageView imageView = new ImageView();
-                        imageView.setFitHeight(20);
-                        imageView.setFitWidth(20);
-
-                        setGraphic(imageView);
-                    }
-
-                };
-            }
-        });*/
-
         listView.setCellFactory(listView -> new ListCell<File>() {
             private ImageView imageView = new ImageView();
 
@@ -100,8 +76,8 @@ public class Controller {
                     setGraphic(null);
                     setText("");
                 } else {
-                    imageView.setFitWidth(20);
-                    imageView.setFitHeight(20);
+                    imageView.setFitWidth(40);
+                    imageView.setFitHeight(40);
 
                     if(item.isFile()){
                         imageView.setImage(fileIco);
@@ -218,8 +194,8 @@ public class Controller {
 
                 //Loading circle
                 ProgressIndicator pInd = new ProgressIndicator();
-                pInd.setPrefSize(20,20);
-                pInd.setStyle(" -fx-progress-color: red;");
+                pInd.setPrefSize(40,40);
+                pInd.setStyle(" -fx-progress-color: black;");
                 selectedItem.setGraphic(pInd);
 
                 //New thread
@@ -319,8 +295,8 @@ public class Controller {
     private void setDirImage(TreeItem<File> treeItem, boolean closed){
 
         ImageView icon = new ImageView();
-        icon.setFitHeight(20);
-        icon.setFitWidth(20);
+        icon.setFitHeight(40);
+        icon.setFitWidth(40);
 
         if(closed){
             icon.setImage(closedFolderIco);

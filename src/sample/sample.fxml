@@ -18,9 +18,9 @@
        <!--RowConstraints percentHeight="5" /-->
    </rowConstraints>
    <children>
-      <GridPane maxWidth="Infinity" minWidth="-Infinity" GridPane.columnIndex="1">
+      <GridPane maxWidth="Infinity" maxHeight="Infinity" GridPane.columnIndex="1">
         <rowConstraints>
-          <RowConstraints percentHeight="5" valignment="CENTER" />
+          <RowConstraints percentHeight="5" valignment="CENTER"/>
           <RowConstraints percentHeight="95" />
         </rowConstraints>
          <children>
@@ -35,7 +35,7 @@
             <ColumnConstraints percentWidth="100" />
          </columnConstraints>
       </GridPane>
-      <TreeView fx:id="systemTree" onMouseClicked="#currentDirContent" GridPane.columnIndex="0" />
+      <TreeView fx:id="systemTree" GridPane.columnIndex="0" />
       <!--Label fx:id="statusField" GridPane.halignment="RIGHT" textAlignment="RIGHT" GridPane.columnIndex="1" GridPane.rowIndex="0" maxWidth="Infinity" prefWidth="Infinity" /-->
    </children>
 </GridPane>
