@@ -24,7 +24,7 @@
           <RowConstraints percentHeight="95" />
         </rowConstraints>
          <children>
-            <Label fx:id="currentFolderNameLable" alignment="BASELINE_CENTER" contentDisplay="CENTER" text="Lable" textAlignment="CENTER" GridPane.halignment="CENTER">
+            <Label fx:id="currentFolderNameLable" alignment="BASELINE_CENTER" contentDisplay="CENTER" textAlignment="CENTER" GridPane.halignment="CENTER">
                <font>
                   <Font name="System Bold" size="14.0" />
                </font>

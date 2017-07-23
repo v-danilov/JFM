@@ -10,10 +10,12 @@ import javafx.scene.image.ImageView;
 import javafx.scene.input.MouseButton;
 import javafx.scene.input.MouseEvent;
 import javafx.stage.WindowEvent;
-import javafx.util.Callback;
 
 import java.io.File;
 import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -34,13 +36,10 @@ public class Controller {
     @FXML
     private Label currentFolderNameLable;
 
-    /*@FXML
-    private Label statusField;*/
 
-
-    private final Image closedFolderIco =new Image(ClassLoader.getSystemResourceAsStream("images/closedFolder.png"));
-    private final Image openFolderIco =new Image(ClassLoader.getSystemResourceAsStream("images/openFolder.png"));
-    private final Image fileIco=new Image(ClassLoader.getSystemResourceAsStream("images/fileico.png"));
+    private final Image closedFolderIco = new Image(ClassLoader.getSystemResourceAsStream("images/closedFolder.png"));
+    private final Image openFolderIco = new Image(ClassLoader.getSystemResourceAsStream("images/openFolder.png"));
+    private final Image fileIco = new Image(ClassLoader.getSystemResourceAsStream("images/fileico.png"));
 
     private ContextMenu contextMenu = new ContextMenu();
 
@@ -49,20 +48,25 @@ public class Controller {
     private MenuItem createDirItem = new MenuItem("Directory");
 
     private MenuItem renameItem = new MenuItem("Rename");
+    private MenuItem copyItem = new MenuItem("Copy");
+    private MenuItem pasteItem = new MenuItem("Paste");
     private MenuItem replaceItem = new MenuItem("Replace");
     private MenuItem deleteItem = new MenuItem("Delete");
 
     private String currentPath;
+    private String copyPath;
 
 
     @FXML
-    public void initialize(){
+    public void initialize() {
         System.out.println("Hello");
 
-        showTree();
+        currentPath = welcomeFunc();
+        showTree(currentPath);
 
-        createFileMenu.getItems().addAll(createFileItem,createDirItem);
-        contextMenu.getItems().addAll(createFileMenu, renameItem, replaceItem, deleteItem);
+        createFileMenu.getItems().addAll(createFileItem, createDirItem);
+        pasteItem.setDisable(true);
+        contextMenu.getItems().addAll(createFileMenu, copyItem, pasteItem, renameItem, replaceItem, deleteItem);
         listView.setContextMenu(contextMenu);
         listView.setPlaceholder(new Label("<- Choose folder..."));
 
@@ -79,10 +83,9 @@ public class Controller {
                     imageView.setFitWidth(40);
                     imageView.setFitHeight(40);
 
-                    if(item.isFile()){
+                    if (item.isFile()) {
                         imageView.setImage(fileIco);
-                    }
-                    else {
+                    } else {
                         imageView.setImage(closedFolderIco);
                     }
 
@@ -92,7 +95,6 @@ public class Controller {
             }
         });
 
-
         systemTree.addEventHandler(MouseEvent.ANY, event -> {
             if (event.getClickCount() == 2 && event.getButton().equals(MouseButton.PRIMARY)) {
                 if (event.getEventType().equals(MouseEvent.MOUSE_CLICKED)) {
@@ -100,17 +102,39 @@ public class Controller {
                 }
                 event.consume();
             }
+
+            if (event.getClickCount() == 1 && event.getButton().equals(MouseButton.PRIMARY)) {
+                if (event.getEventType().equals(MouseEvent.MOUSE_CLICKED)) {
+                    TreeItem<File> selectedItem = systemTree.getSelectionModel().getSelectedItem();
+                    if (selectedItem.isExpanded()) {
+                        File selectedDir = systemTree.getSelectionModel().getSelectedItem().getValue();
+                        displayFiles(selectedDir);
+                    }else {
+                        currentFolderNameLable.setText(selectedItem.getValue().getName());
+                        listView.getItems().clear();
+                        listView.setPlaceholder(new Label("Doble click on folder to download it"));
+                    }
+
+                }
+
+                event.consume();
+            }
         });
 
         contextMenu.setOnShowing(new EventHandler<WindowEvent>() {
             @Override
             public void handle(WindowEvent event) {
-                if(listView.getSelectionModel().getSelectedItem() == null){
+                if (listView.getSelectionModel().getSelectedItem() == null) {
                     renameItem.setVisible(false);
+                    copyItem.setVisible(false);
                     replaceItem.setVisible(false);
                     deleteItem.setVisible(false);
-                }else {
+                } else {
                     renameItem.setVisible(true);
+                    copyItem.setVisible(true);
+                    if (copyPath != null) {
+                        pasteItem.setDisable(false);
+                    }
                     replaceItem.setVisible(true);
                     deleteItem.setVisible(true);
                 }
@@ -135,11 +159,23 @@ public class Controller {
                 renameFile();
             }
         });
+        copyItem.setOnAction(new EventHandler<ActionEvent>() {
+            @Override
+            public void handle(ActionEvent event) {
+                copyPath = listView.getSelectionModel().getSelectedItem().getPath();
+            }
+        });
 
+        pasteItem.setOnAction(new EventHandler<ActionEvent>() {
+            @Override
+            public void handle(ActionEvent event) {
+                copyFile();
+            }
+        });
         replaceItem.setOnAction(new EventHandler<ActionEvent>() {
             @Override
             public void handle(ActionEvent event) {
-               moveFile();
+                moveFile();
             }
         });
 
@@ -152,8 +188,24 @@ public class Controller {
 
     }
 
-    private void showTree(){
-        File root_directory = new File("Root");
+    private String welcomeFunc() {
+        TextInputDialog welcomeMessage = new TextInputDialog();
+        welcomeMessage.setTitle("Hello!");
+        welcomeMessage.setHeaderText("Please, choose the start node\n"
+                + "or close/cancel dialog to use default value.");
+        welcomeMessage.setContentText("Start node:");
+        welcomeMessage.getEditor().setText("Root");
+        welcomeMessage.showAndWait();
+        String rootPath = welcomeMessage.getResult();
+        if (rootPath == null) {
+            return "Root";
+        } else {
+            return rootPath;
+        }
+    }
+
+    private void showTree(String rootPath) {
+        File root_directory = new File(rootPath);
         systemTree.setRoot(new TreeItem<>(root_directory));
         createTree(root_directory, null);
     }
@@ -164,11 +216,6 @@ public class Controller {
         TreeItem<File> root = new TreeItem<>(dir);
         setDirImage(root, true);
         File[] files = dir.listFiles();
-        /*for (File file : files) {
-            if (file.isDirectory()) {
-                createTree(file, root);
-            }
-        }*/
 
         if (parent == null) {
             systemTree.setRoot(root);
@@ -179,51 +226,25 @@ public class Controller {
     }
 
     @FXML
-    private void folderNavigation(){
+    private void folderNavigation() {
         TreeItem<File> selectedItem = systemTree.getSelectionModel().getSelectedItem();
 
-        if(selectedItem !=null){
+        if (selectedItem != null) {
 
             //There is reverse logic for goUp and goDown
             //because treeView default double click expands folder first
-            if(selectedItem.isExpanded() || selectedItem.isLeaf()){
+            if (selectedItem.isExpanded() || selectedItem.isLeaf()) {
 
                 //goUp(selectedItem);
 
-                //Lazy loading block
-
-                //Loading circle
-                ProgressIndicator pInd = new ProgressIndicator();
-                pInd.setPrefSize(40,40);
-                pInd.setStyle(" -fx-progress-color: black;");
-                selectedItem.setGraphic(pInd);
-
-                //New thread
-                Thread update = new Thread() {
-                    public void run() {
-                        try {
-                            //Delay 2sec
-                            Thread.sleep(2000);
-                        }
-                        catch (InterruptedException ie){
-                            System.err.println(ie.getMessage());
-                        }
-                        //Update UI
-                        Platform.runLater(new Runnable() {
-                            public void run() {
-                                goDown(selectedItem);
-                            }
-                        });
-                    }
-                };
-                update.start();
+                //Lazy load
+                lazyLoad(selectedItem);
 
                 // Usual (in time) loading
                 // goDown(selectedItem);
 
 
-            }
-            else {
+            } else {
 
                 //goDown(selectedItem);
 
@@ -233,156 +254,175 @@ public class Controller {
         }
     }
 
-    private void goUp(TreeItem<File> item){
+    private void lazyLoad(TreeItem<File> selectedItem){
+        ProgressIndicator progressInd = new ProgressIndicator();
+        progressInd.setPrefSize(40, 40);
+        progressInd.setStyle(" -fx-progress-color: black;");
+        selectedItem.setGraphic(progressInd);
+        listView.setPlaceholder(new Label("Downloading..."));
+
+        //New thread
+        Thread update = new Thread() {
+            public void run() {
+                try {
+                    //Delay 2sec
+                    Thread.sleep(2000);
+                } catch (InterruptedException ie) {
+                    System.err.println(ie.getMessage());
+                }
+                //Update UI
+                Platform.runLater(new Runnable() {
+                    public void run() {
+                        goDown(selectedItem);
+
+                    }
+                });
+            }
+        };
+        update.start();
+    }
+
+    private void goUp(TreeItem<File> item) {
         setDirImage(item, true);
         item.getChildren().clear();
-        if(isRoot(item)){
+        if (isRoot(item)) {
             displayFiles(item.getValue());
-        }else {
+        } else {
             displayFiles(item.getParent().getValue());
         }
         collapseAllNodes(item);
     }
 
-    private void goDown(TreeItem<File> item){
+    private void goDown(TreeItem<File> item) {
         setDirImage(item, false);
         item.setExpanded(true);
         File currentFile = item.getValue();
         File[] leafs = currentFile.listFiles();
-        for(File leaf : leafs){
-            if(leaf.isDirectory()) {
+        for (File leaf : leafs) {
+            if (leaf.isDirectory()) {
                 createTree(leaf, item);
             }
         }
-        displayFiles(currentFile);
-    }
-
-    private boolean isRoot(TreeItem<File> treeItem){
-        if(treeItem.getParent() == null){
-            return true;
-        }
-        else {
-            return false;
+       String tmp = systemTree.getSelectionModel().getSelectedItem().getValue().getPath();
+        if(tmp.equals(item.getValue().getPath())) {
+            displayFiles(currentFile);
         }
     }
 
-    private void displayFiles(File directory){
+    private boolean isRoot(TreeItem<File> treeItem) {
+        return treeItem.getParent() == null;
+    }
+
+    private void displayFiles(File directory) {
         currentPath = directory.getPath();
         listView.getItems().clear();
         File[] dirFiles = directory.listFiles();
         currentFolderNameLable.setText(directory.getName());
-        if(dirFiles.length != 0) {
+        if (dirFiles.length != 0) {
 
-            for(File file : dirFiles ){
-                    listView.getItems().add(file);
+            for (File file : dirFiles) {
+                listView.getItems().add(file);
             }
 
-        }
-        else {
+        } else {
             listView.setPlaceholder(new Label(directory.getName() + " is empty "));
         }
     }
 
-    private void collapseAllNodes(TreeItem<File> item){
-        if(item != null){
+    private void collapseAllNodes(TreeItem<File> item) {
+        if (item != null) {
             setDirImage(item, true);
-            for(TreeItem<File> child:item.getChildren()){
+            for (TreeItem<File> child : item.getChildren()) {
                 collapseAllNodes(child);
             }
         }
     }
 
-    private void setDirImage(TreeItem<File> treeItem, boolean closed){
+    private void setDirImage(TreeItem<File> treeItem, boolean closed) {
 
         ImageView icon = new ImageView();
         icon.setFitHeight(40);
         icon.setFitWidth(40);
 
-        if(closed){
+        if (closed) {
             icon.setImage(closedFolderIco);
-        }
-        else {
+        } else {
             icon.setImage(openFolderIco);
         }
         treeItem.setGraphic(icon);
 
     }
 
-    private void renameFile(){
+    private void renameFile() {
 
         File fileToRename = listView.getSelectionModel().getSelectedItem();
 
-            String oldName = fileToRename.getName();
-            String newName = "";
+        String oldName = fileToRename.getName();
+        String newName = "";
 
-            newName = getNewName(fileToRename);
+        if (fileToRename.isFile()) {
+            newName = newFileName(oldName);
+        } else {
+            newName = newDirName(oldName);
+        }
 
-            if (!newName.isEmpty()) {
-                String filePath = fileToRename.getPath();
-                String renamedPath = filePath.replace(oldName, newName);
-                File renamedFile = new File(renamedPath);
-                fileToRename.renameTo(renamedFile);
+        if (newName != null) {
+            String filePath = fileToRename.getPath();
+            String renamedPath = filePath.replace(oldName, newName);
+            File renamedFile = new File(renamedPath);
+            if (!fileToRename.renameTo(renamedFile)) {
+                informationAlert("Error! Cannot rename the file.");
             }
 
-            refreshTree();
-
+        }
+        displayFiles(new File(currentPath));
     }
 
     //Get new file name from user
-    private String getNewName(File file){
-
-        boolean type = file.isFile();
+    private String newFileName(String inputFileName) {
 
         //Create window for input
         TextInputDialog textInputDialog = new TextInputDialog();
-        textInputDialog.setHeaderText("Input new name");
+        textInputDialog.setHeaderText("New file name");
+        textInputDialog.getEditor().setText(inputFileName);
 
-        //Fil old name
-        textInputDialog.getEditor().setText(file.getName());
 
         //While name is not valid
-        String name;
+        String fileName;
 
-        if(type){
-            do{
-                textInputDialog.showAndWait();
-                name = textInputDialog.getResult();
-            }
-            while (!checkFileName(name));
-        }else {
-            do{
-                textInputDialog.showAndWait();
-                name = textInputDialog.getResult();
-            }
-            while (!checkDirName(name));
+        do {
+            textInputDialog.showAndWait();
+            fileName = textInputDialog.getResult();
         }
+        while (!checkFileName(fileName));
 
-        return name;
+
+        return fileName;
     }
 
-    private String getNewName(){
+    private String newDirName(String inputDirName) {
 
         //Create window for input
         TextInputDialog textInputDialog = new TextInputDialog();
-        textInputDialog.setHeaderText("Input new name");
+        textInputDialog.setHeaderText("New dir name");
+        textInputDialog.getEditor().setText(inputDirName);
 
 
         //While name is not valid
-        String name;
+        String dirName;
 
-            do{
-                textInputDialog.showAndWait();
-                name = textInputDialog.getResult();
-            }
-            while (!checkFileName(name));
+        do {
+            textInputDialog.showAndWait();
+            dirName = textInputDialog.getResult();
+        }
+        while (!checkDirName(dirName));
 
 
-        return name;
+        return dirName;
     }
 
-    private String getNewPath(File file){
+    private String getNewPath(File file) {
 
-        boolean type = file.isFile();
         String pathOnly = file.getParent();
 
         //Create window for input
@@ -401,10 +441,10 @@ public class Controller {
             textInputDialog.showAndWait();
             name = textInputDialog.getResult();
             String[] dirs = name.split("/");
-            for(String dir : dirs){
-                if(checkDirName(dir)){
+            for (String dir : dirs) {
+                if (checkDirName(dir)) {
                     wrongPath = false;
-                }else {
+                } else {
                     wrongPath = true;
                     break;
                 }
@@ -417,86 +457,159 @@ public class Controller {
     }
 
     //Check file name for regexp
-    private boolean checkFileName(String str){
-        Pattern p = Pattern.compile("[^?:\"<>*\\/\\|]+\\.[A-Za-z0-9]+");
-        Matcher m = p.matcher(str);
-        return m.matches();
+    private boolean checkFileName(String str) {
+        if (str != null) {
+            Pattern p = Pattern.compile("[^?:\"<>*\\/\\|]+\\.[A-Za-z0-9]+");
+            Matcher m = p.matcher(str);
+            return m.matches();
+        }
+        return true;
+
     }
 
     //Check directory name for regexp
-    private boolean checkDirName(String str){
-        Pattern p = Pattern.compile("[^~#%&*{}\\:<>/?\\+\\|\"\\.]+");
-        Matcher m = p.matcher(str);
-        return m.matches() ;
+    private boolean checkDirName(String str) {
+        if (str != null) {
+            Pattern p = Pattern.compile("[^~#%&*{}\\:<>/?\\+\\|\"\\.]+");
+            Matcher m = p.matcher(str);
+            return m.matches();
+        }
+        return true;
+    }
+
+    //Copy file
+    private void copyFile() {
+        String name = new File(copyPath).getName();
+        Path source = Paths.get(copyPath);
+        Path dest = Paths.get(currentPath + "/" + name);
+        if (!new File(currentPath + "/" + name).exists()) {
+            try {
+                Files.copy(source, dest);
+                displayFiles(new File(currentPath));
+            } catch (IOException ioe) {
+                System.err.println(ioe.getStackTrace());
+            }
+        } else {
+            informationAlert("File already exists");
+        }
+        displayFiles(new File(currentPath));
     }
 
     //Move file
-    private void moveFile(){
+    private void moveFile() {
         File fileToMove = listView.getSelectionModel().getSelectedItem();
-            String newPath;
-            newPath = getNewPath(fileToMove);
-            fileToMove.renameTo(new File(newPath + fileToMove.getName()));
+        String newPath;
+        newPath = getNewPath(fileToMove);
+        if(!(newPath.endsWith("/") || newPath.endsWith("\\"))){
+            newPath += "\\";
+        }
+
+        //If replace was successful
+        if (fileToMove.renameTo(new File(newPath + fileToMove.getName()))) {
+
+            //If replacing object was directory
+
+            if(fileToMove.isFile()){
+                System.out.println("lalishe");
+            }
+            if(fileToMove.isDirectory()){
+
+                //Delete old node from tree
+                TreeItem<File> deleteNode = searchTreeItem(systemTree.getRoot(), fileToMove.getPath());
+                System.out.println(deleteNode.getParent().getChildren().remove(deleteNode));
+            }
+        }else {
+            informationAlert("Cannot replace the file. Check the filepath and try again");
+        }
+
+        //Update tree and add new node
+        globalDirUpdate(newPath);
+        //Update files
+        displayFiles(new File(currentPath));
     }
 
     //Delete file
-    private void deleteFile(){
-        File fileToDel= listView.getSelectionModel().getSelectedItem();
+    private void deleteFile() {
+        File fileToDel = listView.getSelectionModel().getSelectedItem();
 
-            String mes = "Delete " + fileToDel.getName() + "?";
+        String mes = "Delete " + fileToDel.getName() + "?";
 
-            //Take confirmation
-            if (confirmationAlert(mes)) {
-                fileToDel.delete();
+        //Take confirmation
+        if (confirmationAlert(mes)) {
+            if (!fileToDel.delete()) {
+                informationAlert("Cannot delete file. Try again later or check the file");
             }
-            systemTree.refresh();
+        }
+        displayFiles(new File(currentPath));
 
     }
 
     //Confirmation func
-    private boolean confirmationAlert(String mes){
+    private boolean confirmationAlert(String mes) {
 
         //Prepare alert
         Alert alert = new Alert(Alert.AlertType.CONFIRMATION, mes, ButtonType.YES, ButtonType.CANCEL);
         alert.showAndWait();
 
         //Get choice
-        if (alert.getResult() == ButtonType.YES) {
-            return true;
-        }else {
-            return false;
+        return alert.getResult() == ButtonType.YES;
+    }
+
+    private void informationAlert(String mes) {
+
+        //Prepare alert
+        Alert alert = new Alert(Alert.AlertType.ERROR, mes, ButtonType.CLOSE);
+        alert.showAndWait();
+    }
+
+    private void createNewFile() {
+        String fileName = newFileName("");
+        if(fileName != null) {
+            File newFile = new File(currentPath + "/" + fileName);
+            try {
+                if (!newFile.createNewFile()) {
+                    informationAlert("Cannot create file. Check the existing files");
+                }
+            } catch (IOException ioe) {
+                System.err.println(ioe.getStackTrace());
+            }
+            displayFiles(new File(currentPath));
         }
     }
 
-    private void createNewFile(){
-        System.out.println(currentPath);
-        String newFileName = getNewName();
-        File newFile = new File(currentPath + "/" + newFileName);
-        try {
-            newFile.createNewFile();
+    private void createNewDir() {
+        String dirName = newDirName("");
+        if(dirName != null) {
+            File newDir = new File(currentPath + "/" + dirName);
+            if (!newDir.mkdirs()) {
+                informationAlert("Cannot create directory. Check the file tree.");
+            }
+            displayFiles(new File(currentPath));
         }
-        catch (IOException ioe){
-            System.err.println(ioe.getStackTrace());
-        }
-        refreshTree();
     }
 
-    private void createNewDir(){
-
-    }
-
-    private void refreshTree(){
-        systemTree.setRoot(null);
-        showTree();
-    }
-
-   /* private void statusShow(boolean status){
-        if(status){
-            statusField.setTextFill(Color.web("00ff00"));
-            statusField.setText("Success");
-        }else{
-            statusField.setTextFill(Color.web("#ff0000"));
-            statusField.setText("Failed");
+    //Move and copy
+    private void globalDirUpdate(String path){
+        if(path.endsWith("\\") || path.endsWith("/")) {
+            path = path.substring(0, path.length() - 1);
         }
-    }*/
+        File file = new File(path);
+        TreeItem<File> updateItem = searchTreeItem(systemTree.getRoot(), path);
+        if(updateItem != null){
+            updateItem.getChildren().clear();
+            lazyLoad(updateItem);
+        }
+    }
+
+    private TreeItem<File> searchTreeItem(TreeItem<File> root, String path){
+        for(TreeItem<File> item : root.getChildren()){
+            if(item.getValue().getPath().equals(path)){
+                return item;
+            }else {
+                searchTreeItem(item, path);
+            }
+        }
+        return null;
+    }
 
 }
