@@ -4,6 +4,10 @@ class Directory extentds File
 {
     private boolean wasOpenned = false;
     
+    public Directory(){
+        super();
+    }
+    
     public boolean getWasOpenned(){
         return wasOpenned;
     }
@@ -16,9 +20,9 @@ class Directory extentds File
     public String toString(){
         return getName();
     }
-    
-    @Override
-    public File[] listFiles(){
+   
+    public Directory[] listDirs(){
         open();
-        return super.listFiles();
+        return (Directory)super.listFiles(file -> file.isDirectory());
+    }
 }
