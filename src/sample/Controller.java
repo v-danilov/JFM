@@ -1,6 +1,7 @@
 package sample;
 
 import javafx.application.Platform;
+import javafx.collections.ObservableList;
 import javafx.event.ActionEvent;
 import javafx.event.EventHandler;
 import javafx.fxml.FXML;
@@ -16,13 +17,16 @@ import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.HashSet;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 public class Controller {
 
     @FXML
-    private TreeView<File> systemTree;
+    private TreeView<Directory> systemTree;
 
     @FXML
     private Button showButton;
@@ -37,39 +41,50 @@ public class Controller {
     private Label currentFolderNameLable;
 
 
+    //Icons
     private final Image closedFolderIco = new Image(ClassLoader.getSystemResourceAsStream("images/closedFolder.png"));
     private final Image openFolderIco = new Image(ClassLoader.getSystemResourceAsStream("images/openFolder.png"));
     private final Image fileIco = new Image(ClassLoader.getSystemResourceAsStream("images/fileico.png"));
 
+    //Context
     private ContextMenu contextMenu = new ContextMenu();
 
+    //Create context
     private Menu createFileMenu = new Menu("Create new...");
     private MenuItem createFileItem = new MenuItem("File");
     private MenuItem createDirItem = new MenuItem("Directory");
 
+    //Context functions
     private MenuItem renameItem = new MenuItem("Rename");
     private MenuItem copyItem = new MenuItem("Copy");
     private MenuItem pasteItem = new MenuItem("Paste");
     private MenuItem replaceItem = new MenuItem("Replace");
     private MenuItem deleteItem = new MenuItem("Delete");
 
+    //Paths
     private String currentPath;
     private String copyPath;
 
 
     @FXML
     public void initialize() {
-        System.out.println("Hello");
 
+        //Alerting welcome message
         currentPath = welcomeFunc();
-        showTree(currentPath);
 
+        //Creating tree
+        createTree(currentPath);
+
+        //Creating context menu
         createFileMenu.getItems().addAll(createFileItem, createDirItem);
         pasteItem.setDisable(true);
         contextMenu.getItems().addAll(createFileMenu, copyItem, pasteItem, renameItem, replaceItem, deleteItem);
+
+        //Prepare list view
         listView.setContextMenu(contextMenu);
         listView.setPlaceholder(new Label("<- Choose folder..."));
 
+        //Add images to list view rows
         listView.setCellFactory(listView -> new ListCell<File>() {
             private ImageView imageView = new ImageView();
 
@@ -80,9 +95,12 @@ public class Controller {
                     setGraphic(null);
                     setText("");
                 } else {
+
+                    //size of icon
                     imageView.setFitWidth(40);
                     imageView.setFitHeight(40);
 
+                    //type of icon
                     if (item.isFile()) {
                         imageView.setImage(fileIco);
                     } else {
@@ -95,7 +113,10 @@ public class Controller {
             }
         });
 
+        //Override default tree controls (double/single clicks)
         systemTree.addEventHandler(MouseEvent.ANY, event -> {
+
+            //Double click - dive ito level
             if (event.getClickCount() == 2 && event.getButton().equals(MouseButton.PRIMARY)) {
                 if (event.getEventType().equals(MouseEvent.MOUSE_CLICKED)) {
                     folderNavigation();
@@ -103,16 +124,17 @@ public class Controller {
                 event.consume();
             }
 
+            //Single click - show files in floder
             if (event.getClickCount() == 1 && event.getButton().equals(MouseButton.PRIMARY)) {
                 if (event.getEventType().equals(MouseEvent.MOUSE_CLICKED)) {
-                    TreeItem<File> selectedItem = systemTree.getSelectionModel().getSelectedItem();
+                    TreeItem<Directory> selectedItem = systemTree.getSelectionModel().getSelectedItem();
                     if (selectedItem.isExpanded()) {
                         File selectedDir = systemTree.getSelectionModel().getSelectedItem().getValue();
                         displayFiles(selectedDir);
                     }else {
                         currentFolderNameLable.setText(selectedItem.getValue().getName());
                         listView.getItems().clear();
-                        listView.setPlaceholder(new Label("Doble click on folder to download it"));
+                        listView.setPlaceholder(new Label("Double click on folder to download it"));
                     }
 
                 }
@@ -121,6 +143,7 @@ public class Controller {
             }
         });
 
+        //Prepearing context menu
         contextMenu.setOnShowing(new EventHandler<WindowEvent>() {
             @Override
             public void handle(WindowEvent event) {
@@ -141,24 +164,35 @@ public class Controller {
             }
         });
 
+        /*
+         * Handle context items
+         */
+
+        //Create new file
         createFileItem.setOnAction(new EventHandler<ActionEvent>() {
             @Override
             public void handle(ActionEvent event) {
                 createNewFile();
             }
         });
+
+        //Create new directory
         createDirItem.setOnAction(new EventHandler<ActionEvent>() {
             @Override
             public void handle(ActionEvent event) {
                 createNewDir();
             }
         });
+
+        //Rename file/directory
         renameItem.setOnAction(new EventHandler<ActionEvent>() {
             @Override
             public void handle(ActionEvent event) {
                 renameFile();
             }
         });
+
+        //Copy file/directory
         copyItem.setOnAction(new EventHandler<ActionEvent>() {
             @Override
             public void handle(ActionEvent event) {
@@ -166,12 +200,15 @@ public class Controller {
             }
         });
 
+        //Paste file/directory
         pasteItem.setOnAction(new EventHandler<ActionEvent>() {
             @Override
             public void handle(ActionEvent event) {
-                copyFile();
+                pasteFile();
             }
         });
+
+        //Move file/directory
         replaceItem.setOnAction(new EventHandler<ActionEvent>() {
             @Override
             public void handle(ActionEvent event) {
@@ -179,6 +216,7 @@ public class Controller {
             }
         });
 
+        //Delete file/directory
         deleteItem.setOnAction(new EventHandler<ActionEvent>() {
             @Override
             public void handle(ActionEvent event) {
@@ -188,6 +226,13 @@ public class Controller {
 
     }
 
+    /**
+     * Welcome message function.
+     * The function creates text input dialog and gets the root path of file system.
+     * Default value for root is local "Root" folder.
+     * @return Path to the system root.
+     *
+     */
     private String welcomeFunc() {
         TextInputDialog welcomeMessage = new TextInputDialog();
         welcomeMessage.setTitle("Hello!");
@@ -204,19 +249,26 @@ public class Controller {
         }
     }
 
-    private void showTree(String rootPath) {
-        File root_directory = new File(rootPath);
+    /**
+     * Create tree function.
+     * It creates the file system tree.
+     * @param rootPath - path to the current level root
+     */
+    private void createTree(String rootPath) {
+        Directory root_directory = new Directory(rootPath);
         systemTree.setRoot(new TreeItem<>(root_directory));
-        createTree(root_directory, null);
+        createLevel(root_directory, null);
     }
 
-
-    private void createTree(File dir, TreeItem<File> parent) {
-
-        TreeItem<File> root = new TreeItem<>(dir);
+    /**
+     * Create level function.
+     * Create a tree level. Add directory to current root.
+     * @param dir - directory to add
+     * @param parent - parent tree item contains the directory
+     */
+    private void createLevel(File dir, TreeItem<Directory> parent) {
+        TreeItem<Directory> root = new TreeItem<>(new Directory(dir));
         setDirImage(root, true);
-        File[] files = dir.listFiles();
-
         if (parent == null) {
             systemTree.setRoot(root);
         } else {
@@ -225,14 +277,22 @@ public class Controller {
 
     }
 
-    @FXML
+
+    /*
+     * Folder navigation function.
+     */
+
     private void folderNavigation() {
-        TreeItem<File> selectedItem = systemTree.getSelectionModel().getSelectedItem();
+        TreeItem<Directory> selectedItem = systemTree.getSelectionModel().getSelectedItem();
 
         if (selectedItem != null) {
 
-            //There is reverse logic for goUp and goDown
-            //because treeView default double click expands folder first
+            /*
+             * There is reverse logic for goUp and goDown
+             * because treeView default double click expands folder first
+             */
+
+            //If folder is open or folder doesnt have children -> go to the lower level
             if (selectedItem.isExpanded() || selectedItem.isLeaf()) {
 
                 //goUp(selectedItem);
@@ -240,11 +300,16 @@ public class Controller {
                 //Lazy load
                 lazyLoad(selectedItem);
 
-                // Usual (in time) loading
-                // goDown(selectedItem);
+                /*
+                 *  For usual (in time) loading use:
+                 *  //goDown(selectedItem);
+                 */
 
 
-            } else {
+            }
+
+            //Else -> go to the upper level and close the folder
+            else {
 
                 //goDown(selectedItem);
 
@@ -254,14 +319,25 @@ public class Controller {
         }
     }
 
-    private void lazyLoad(TreeItem<File> selectedItem){
+    /**
+     * Lazy loading fuction.
+     * This function downloads content of the folder in tray.
+     * @param selectedItem - selected tree item (folder to be downloaded)
+     */
+    private void lazyLoad(TreeItem<Directory> selectedItem){
+
+        //Show progress indicator
         ProgressIndicator progressInd = new ProgressIndicator();
         progressInd.setPrefSize(40, 40);
         progressInd.setStyle(" -fx-progress-color: black;");
         selectedItem.setGraphic(progressInd);
-        listView.setPlaceholder(new Label("Downloading..."));
 
-        //New thread
+        //Show message of the process
+        if(!selectedItem.getValue().getWasOpenned()){
+            listView.setPlaceholder(new Label("Downloading..."));
+        }
+
+        //Create new thread
         Thread update = new Thread() {
             public void run() {
                 try {
@@ -279,12 +355,17 @@ public class Controller {
                 });
             }
         };
+        //Start thread
         update.start();
     }
 
-    private void goUp(TreeItem<File> item) {
+    /**
+     * Go up function.
+     * Rise to the upper level of the current tree view item (folder).
+     * @param item - selected tree item
+     */
+    private void goUp(TreeItem<Directory> item) {
         setDirImage(item, true);
-        item.getChildren().clear();
         if (isRoot(item)) {
             displayFiles(item.getValue());
         } else {
@@ -293,30 +374,77 @@ public class Controller {
         collapseAllNodes(item);
     }
 
-    private void goDown(TreeItem<File> item) {
+    /**
+     * Go down funtion.
+     * Dive into the lower level of current tree view item (folder).
+     * @param item - selected tree item
+     */
+    private void goDown(TreeItem<Directory> item) {
         setDirImage(item, false);
         item.setExpanded(true);
         File currentFile = item.getValue();
-        File[] leafs = currentFile.listFiles();
-        for (File leaf : leafs) {
-            if (leaf.isDirectory()) {
-                createTree(leaf, item);
+        Directory[] leafs = (Directory[]) currentFile.listFiles((dir, name) -> !name.equals(".DS_Store"));
+
+        //Download the folder if it not done previously
+        if(!item.getValue().getWasOpenned()){
+            for (File leaf : leafs) {
+                if (leaf.isDirectory()) {
+                    createLevel(leaf, item);
+                }
+            }
+            item.getValue().open();
+        }
+
+        //If it was downloaded earlier
+        else {
+
+            //Get tree nodes
+            ObservableList<TreeItem<Directory>> children = item.getChildren();
+            ArrayList<File> fileArrayList = new ArrayList<>();
+            int size = children.size();
+
+            //Get files
+            for(int i = 0; i < size; i++){
+               fileArrayList.add(children.get(i).getValue());
+            }
+
+            //Compare uploaded nodes and current file system data
+            boolean check = new HashSet(Arrays.asList(leafs)).equals(new HashSet(fileArrayList));
+
+            //If data has differences update the tree root.
+            if(!check){
+                item.getChildren().clear();
+                createLevel(currentFile,item);
             }
         }
+
+        //Display files of the current folder
        String tmp = systemTree.getSelectionModel().getSelectedItem().getValue().getPath();
         if(tmp.equals(item.getValue().getPath())) {
             displayFiles(currentFile);
         }
     }
 
-    private boolean isRoot(TreeItem<File> treeItem) {
+    /**
+     * Defines the upper item of the tree
+     * @param treeItem - current item
+     * @return True - the item is the root of tree.
+     */
+    private boolean isRoot(TreeItem<Directory> treeItem) {
         return treeItem.getParent() == null;
     }
 
+    /**
+     * Display folder content to the list view.
+     * @param directory - folder content to be displayed
+     */
     private void displayFiles(File directory) {
+
         currentPath = directory.getPath();
         listView.getItems().clear();
-        File[] dirFiles = directory.listFiles();
+
+        //Ignore macOs files ".DS_Store"
+        File[] dirFiles = directory.listFiles((dir, name) -> !name.equals(".DS_Store"));
         currentFolderNameLable.setText(directory.getName());
         if (dirFiles.length != 0) {
 
@@ -324,21 +452,32 @@ public class Controller {
                 listView.getItems().add(file);
             }
 
-        } else {
+        }
+        //Display nessage about empty folder
+        else {
             listView.setPlaceholder(new Label(directory.getName() + " is empty "));
         }
     }
 
-    private void collapseAllNodes(TreeItem<File> item) {
+    /**
+     * Collapse all children nodes of the tree
+     * @param item - start node to collapse
+     */
+    private void collapseAllNodes(TreeItem<Directory> item) {
         if (item != null) {
             setDirImage(item, true);
-            for (TreeItem<File> child : item.getChildren()) {
+            for (TreeItem<Directory> child : item.getChildren()) {
                 collapseAllNodes(child);
             }
         }
     }
 
-    private void setDirImage(TreeItem<File> treeItem, boolean closed) {
+    /**
+     * Set image of the folder to the item
+     * @param treeItem - item for set graphics
+     * @param closed - type of image. True means closed folder, False - opened folder.
+     */
+    private void setDirImage(TreeItem<Directory> treeItem, boolean closed) {
 
         ImageView icon = new ImageView();
         icon.setFitHeight(40);
@@ -346,6 +485,7 @@ public class Controller {
 
         if (closed) {
             icon.setImage(closedFolderIco);
+            treeItem.setExpanded(false);
         } else {
             icon.setImage(openFolderIco);
         }
@@ -353,12 +493,14 @@ public class Controller {
 
     }
 
+    //Rename file
     private void renameFile() {
 
         File fileToRename = listView.getSelectionModel().getSelectedItem();
 
         String oldName = fileToRename.getName();
         String newName = "";
+        TreeItem<Directory> renamedItem = searchTreeItem(systemTree.getRoot(), fileToRename.getPath());
 
         if (fileToRename.isFile()) {
             newName = newFileName(oldName);
@@ -373,7 +515,7 @@ public class Controller {
             if (!fileToRename.renameTo(renamedFile)) {
                 informationAlert("Error! Cannot rename the file.");
             }
-
+            renamedItem.setValue(new Directory(newName));
         }
         displayFiles(new File(currentPath));
     }
@@ -400,6 +542,7 @@ public class Controller {
         return fileName;
     }
 
+    //New directory name
     private String newDirName(String inputDirName) {
 
         //Create window for input
@@ -421,6 +564,7 @@ public class Controller {
         return dirName;
     }
 
+    //New path
     private String getNewPath(File file) {
 
         String pathOnly = file.getParent();
@@ -477,14 +621,15 @@ public class Controller {
         return true;
     }
 
-    //Copy file
-    private void copyFile() {
+    //Paste file
+    private void pasteFile() {
         String name = new File(copyPath).getName();
         Path source = Paths.get(copyPath);
         Path dest = Paths.get(currentPath + "/" + name);
         if (!new File(currentPath + "/" + name).exists()) {
             try {
                 Files.copy(source, dest);
+                globalDirUpdate(dest.getParent().toString());
                 displayFiles(new File(currentPath));
             } catch (IOException ioe) {
                 System.err.println(ioe.getStackTrace());
@@ -503,19 +648,19 @@ public class Controller {
         if(!(newPath.endsWith("/") || newPath.endsWith("\\"))){
             newPath += "\\";
         }
+        boolean isDirectory = fileToMove.isDirectory();
 
         //If replace was successful
         if (fileToMove.renameTo(new File(newPath + fileToMove.getName()))) {
 
-            //If replacing object was directory
-
-            if(fileToMove.isFile()){
-                System.out.println("lalishe");
-            }
-            if(fileToMove.isDirectory()){
+            //If replaced object was a directory
+            if(isDirectory){
 
                 //Delete old node from tree
-                TreeItem<File> deleteNode = searchTreeItem(systemTree.getRoot(), fileToMove.getPath());
+                TreeItem<Directory> deleteNode = searchTreeItem(systemTree.getRoot(), fileToMove.getPath());
+                if(deleteNode == null){
+                    System.out.println("Wowaw!");
+                }
                 System.out.println(deleteNode.getParent().getChildren().remove(deleteNode));
             }
         }else {
@@ -524,7 +669,6 @@ public class Controller {
 
         //Update tree and add new node
         globalDirUpdate(newPath);
-        //Update files
         displayFiles(new File(currentPath));
     }
 
@@ -577,6 +721,7 @@ public class Controller {
         }
     }
 
+    //Create new directory
     private void createNewDir() {
         String dirName = newDirName("");
         if(dirName != null) {
@@ -593,23 +738,22 @@ public class Controller {
         if(path.endsWith("\\") || path.endsWith("/")) {
             path = path.substring(0, path.length() - 1);
         }
-        File file = new File(path);
-        TreeItem<File> updateItem = searchTreeItem(systemTree.getRoot(), path);
+        TreeItem<Directory> updateItem = searchTreeItem(systemTree.getRoot(), path);
         if(updateItem != null){
             updateItem.getChildren().clear();
             lazyLoad(updateItem);
         }
     }
 
-    private TreeItem<File> searchTreeItem(TreeItem<File> root, String path){
-        for(TreeItem<File> item : root.getChildren()){
-            if(item.getValue().getPath().equals(path)){
-                return item;
-            }else {
-                searchTreeItem(item, path);
-            }
+    //Search item in tree to update
+    private TreeItem<Directory> searchTreeItem(TreeItem<Directory> root, String path){
+        TreeItem<Directory> result;
+        if(root.getValue().getPath().equals(path)) return root;
+        for(TreeItem<Directory> item : root.getChildren()){
+            result = searchTreeItem(item, path);
+            if(result != null) return result;
         }
-        return null;
+        return  null;
     }
 
 }
