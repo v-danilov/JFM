@@ -63,10 +63,11 @@ public class Controller {
     public void initialize() {
 
         //Alerting welcome message
-        currentPath = welcomeFunc();
+        //currentPath = createOSTree();
 
         //Creating tree
         //createTree(currentPath);
+        createOSTree();
 
         //Creating context menu
         createFileMenu.getItems().addAll(createFileItem, createDirItem);
@@ -224,7 +225,7 @@ public class Controller {
      *
      * @return Path to the system root.
      */
-    private String welcomeFunc() {
+    private void createOSTree() {
 
         String OSname = System.getProperty("os.name");
 
@@ -242,8 +243,6 @@ public class Controller {
         } else {
             createTree(System.getProperty("user.home"));
         }
-
-        return "";
     }
 
     /**
