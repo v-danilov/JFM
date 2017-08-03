@@ -1,7 +1,7 @@
 # JFM
 Java file manager. Sipmle application to browse file system for Unix and Windwos OS's.
 
-#Features and possibilities
+# Features and possibilities
 - Navigation throught filesystem presents with tree view
 - Display folder content with split view
 - Lazy load sub folders that can help integration in web systems
