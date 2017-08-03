@@ -1,6 +1,7 @@
 package sample;
 import java.io.File;
 import java.net.URI;
+import java.util.ArrayList;
 
 
 class Directory extends File {
@@ -37,12 +38,27 @@ class Directory extends File {
 
     @Override
     public String toString() {
-        return getName();
+        if (!getName().equals("")) {
+            return getName();
+        } else {
+            return super.getPath();
+        }
     }
 
     @Override
     public File[] listFiles() {
         open();
         return super.listFiles();
+    }
+
+    public ArrayList<Directory> listDirectories() {
+        File[] allFiles = super.listFiles((dir, name) -> !name.equals(".DS_Store"));
+        ArrayList<Directory> directoriesOnly = new ArrayList<>();
+        for (File file : allFiles) {
+            if (file.isDirectory()) {
+                directoriesOnly.add(new Directory(file));
+            }
+        }
+        return directoriesOnly;
     }
 }

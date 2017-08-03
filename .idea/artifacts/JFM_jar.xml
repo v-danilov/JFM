@@ -4,6 +4,7 @@
     <root id="archive" name="JFM.jar">
       <element id="module-output" name="JFM" />
       <element id="dir-copy" path="$PROJECT_DIR$/src/images" />
+      <element id="library" level="project" name="org.apache.directory.studio:org.apache.commons.io:2.4" />
     </root>
   </artifact>
 </component>
